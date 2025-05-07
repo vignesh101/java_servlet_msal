@@ -60,11 +60,6 @@ public class MsalConfig {
             : Collections.emptyList();
     }
 
-    public static int getSessionMaxAge() {
-        String maxAge = properties.getProperty("session.maxAge");
-        return maxAge != null ? Integer.parseInt(maxAge) : 3600;
-    }
-
     public static synchronized ConfidentialClientApplication getMsalClient() {
         if (msalClient == null) {
             try {

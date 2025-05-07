@@ -12,12 +12,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import com.auth.msal.model.AuthenticationResult;
 import com.auth.msal.util.SessionManager;
 
 public class AuthenticationFilter implements Filter {
 
+    private static final int EXPIRY_WARNING_THRESHOLD = 60; // 60 seconds (1 minute)
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
+        // Initialization code if needed
     }
 
     @Override
@@ -34,7 +38,9 @@ public class AuthenticationFilter implements Filter {
             return;
         }
 
-        if (SessionManager.isTokenExpired(session)) {
+        AuthenticationResult authResult = SessionManager.getAuthResult(session);
+
+        if (authResult.isExpired()) {
             boolean refreshed = SessionManager.refreshTokenIfNeeded(session);
             
             if (!refreshed) {
@@ -43,12 +49,16 @@ public class AuthenticationFilter implements Filter {
                 return;
             }
         }
+        else if (authResult.getExpiresIn() <= EXPIRY_WARNING_THRESHOLD) {
+            SessionManager.refreshTokenIfNeeded(session);
+        }
+
+        request.setAttribute("tokenExpiresIn", authResult.getExpiresIn());
 
         chain.doFilter(request, response);
     }
 
     @Override
     public void destroy() {
-
     }
 }

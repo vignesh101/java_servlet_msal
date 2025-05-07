@@ -25,14 +25,33 @@
                     <h4>Session Information</h4>
                 </div>
                 <div class="card-body">
-                    <p><strong>Token Expires In:</strong> ${expiresIn} seconds</p>
+                    <p><strong>Token Expires In:</strong> ${tokenExpiresIn} seconds</p>
+                    <c:choose>
+                        <c:when test="${tokenExpiresIn > 300}">
+                            <div class="alert alert-success">
+                                Your session is active and the token is valid.
+                            </div>
+                        </c:when>
+                        <c:when test="${tokenExpiresIn > 60}">
+                            <div class="alert alert-warning">
+                                Your session will expire soon. The page will automatically refresh to extend your session.
+                            </div>
+                        </c:when>
+                        <c:otherwise>
+                            <div class="alert alert-danger">
+                                Your session is about to expire! The page will automatically refresh to attempt extending your session.
+                            </div>
+                        </c:otherwise>
+                    </c:choose>
+                    
                     <div class="progress mb-3">
-                        <div class="progress-bar" role="progressbar" 
-                             style="width: ${(expiresIn / 3600) * 100}%;" 
-                             aria-valuenow="${(expiresIn / 3600) * 100}" 
+                        <div class="progress-bar ${tokenExpiresIn > 300 ? 'bg-success' : (tokenExpiresIn > 60 ? 'bg-warning' : 'bg-danger')}" 
+                             role="progressbar" 
+                             style="width: ${(tokenExpiresIn / 3600) * 100}%;" 
+                             aria-valuenow="${(tokenExpiresIn / 3600) * 100}" 
                              aria-valuemin="0" 
                              aria-valuemax="100">
-                            ${(expiresIn / 3600) * 100}%
+                            ${Math.round((tokenExpiresIn / 3600) * 100)}%
                         </div>
                     </div>
                 </div>
@@ -45,11 +64,23 @@
     </div>
     
     <script>
-        const expiresIn = ${expiresIn};
+        // Calculate refresh time - refresh the page when less than 5 minutes remain
+        // or 30 seconds before expiry, whichever comes first
+        const expiresIn = ${tokenExpiresIn};
+        const refreshTime = Math.min(expiresIn - 30, 300);
+        
         if (expiresIn > 30) {
+            console.log("Token expires in " + expiresIn + " seconds. Will refresh in " + refreshTime + " seconds");
+            setTimeout(function() {
+                console.log("Refreshing page to extend session...");
+                window.location.reload();
+            }, refreshTime * 1000);
+        } else if (expiresIn > 0) {
+            // If very close to expiry, refresh very soon
+            console.log("Token about to expire! Refreshing in 5 seconds...");
             setTimeout(function() {
                 window.location.reload();
-            }, (expiresIn - 30) * 1000);
+            }, 5000);
         }
     </script>
 </t:layout>
